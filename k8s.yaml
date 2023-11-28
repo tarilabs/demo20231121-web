@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: site
+  template:
+    metadata:
+      labels:
+        name: site
+    spec:
+      containers:
+      - name: site
+        image: quay.io/mmortari/demo20231121-web:latest
+        ports:
+        - name: http
+          containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: site
+  labels:
+    name: site
+spec:
+  selector:
+    name: site
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: http
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: demo1of2
+  labels:
+    name: site
+spec:
+  host: demo.apps.mmortari.dev.datahub.redhat.com
+  to:
+    kind: Service
+    name: site
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: demo2of2
+  labels:
+    app.kubernetes.io/instance: modelmesh-controller
+    app.kubernetes.io/managed-by: modelmesh-controller
+    app.kubernetes.io/name: modelmesh-controller
+    modelmesh-service: modelmesh-serving
+spec:
+  host: demo.apps.mmortari.dev.datahub.redhat.com
+  path: /v2/models/mnist-e2e
+  to:
+    kind: Service
+    name: modelmesh-serving
+    weight: 100
+  port:
+    targetPort: http
+  wildcardPolicy: None
